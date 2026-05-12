@@ -1,7 +1,5 @@
 node_modules/*
-package-lock.json
 data.db
 node_modules/
-.env
 coverage/
 data/
