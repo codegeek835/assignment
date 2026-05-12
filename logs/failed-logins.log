@@ -1,0 +1,2 @@
+2026-05-03T13:38:04.377Z FAILED LOGIN ip=127.0.0.1 user=alice reason=bad_password
+2026-05-03T14:29:54.393Z FAILED LOGIN ip=127.0.0.1 user=alice1 reason=not_found

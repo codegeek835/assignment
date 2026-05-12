@@ -1,0 +1,425 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Basic API",
+    "description": "Assignment refactored Express API: user registration (`/createUser`), login (`/login`), listing users (`/users`), and login-audit analytics (`/alerts`). Each **401** login appends a line to the audit log; `/alerts` applies the Assignment 1 sliding-window rule (>5 failures in 10 minutes by default).",
+    "version": "2.0.0"
+  },
+  "tags": [
+    {
+      "name": "Users",
+      "description": "User registration and authentication"
+    },
+    {
+      "name": "Login audit",
+      "description": "Failed-login file log and suspicious-IP detection (Assignment 1 logic in-process)"
+    }
+  ],
+  "paths": {
+    "/createUser": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Create user",
+        "description": "Registers a new user. Username and email must be unique. Password length 8–256 characters. Email is validated and normalized (RFC-style via express-validator).",
+        "operationId": "createUser",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequest"
+              },
+              "examples": {
+                "sample": {
+                  "value": {
+                    "username": "alice",
+                    "email": "alice@example.com",
+                    "password": "secretpass1"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserCreatedMessage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestValidation"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictDuplicate"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/login": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Login",
+        "description": "Authenticates with **`password`** plus **exactly one** of **`username`** or **`email`** (not both). Email is normalized like on registration.",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              },
+              "examples": {
+                "withUsername": {
+                  "value": {
+                    "username": "alice",
+                    "password": "secretpass1"
+                  }
+                },
+                "withEmail": {
+                  "value": {
+                    "email": "alice@example.com",
+                    "password": "secretpass1"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WelcomeMessage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestValidation"
+          },
+          "401": {
+            "description": "Invalid credentials. Also appends one failed-login line to the audit log (see `LOGIN_AUDIT_LOG_PATH`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                },
+                "example": {
+                  "msg": "Invalid credentials"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "List users",
+        "description": "Returns `id`, `username`, and `email` (password hashes never returned).",
+        "operationId": "listUsers",
+        "responses": {
+          "200": {
+            "description": "List of users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserPublic"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/alerts": {
+      "get": {
+        "tags": ["Login audit"],
+        "summary": "Suspicious IPs",
+        "description": "Reads the on-disk failed-login log produced by this API and returns IPs with more than **AUDIT_FAILURE_THRESHOLD** failures in any **AUDIT_WINDOW_MINUTES** sliding window (defaults match Assignment 1: 5 / 10 min).",
+        "operationId": "getAlerts",
+        "responses": {
+          "200": {
+            "description": "Suspicious IP summaries (empty array if none)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlertEntry"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateUserRequest": {
+        "type": "object",
+        "required": ["username", "email", "password"],
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "example": "alice"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "example": "alice@example.com"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 256,
+            "format": "password",
+            "example": "secretpass1"
+          }
+        }
+      },
+      "LoginRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["username", "password"],
+            "properties": {
+              "username": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "example": "alice"
+              },
+              "password": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 256,
+                "format": "password",
+                "example": "secretpass1"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["email", "password"],
+            "properties": {
+              "email": {
+                "type": "string",
+                "format": "email",
+                "maxLength": 254,
+                "example": "alice@example.com"
+              },
+              "password": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 256,
+                "format": "password",
+                "example": "secretpass1"
+              }
+            }
+          }
+        ]
+      },
+      "AlertEntry": {
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string",
+            "example": "127.0.0.1"
+          },
+          "total_failed_attempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "suspicious_windows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "window_start": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "window_end": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "failures_in_window": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        },
+        "required": ["ip", "total_failed_attempts", "suspicious_windows"]
+      },
+      "UserPublic": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "MongoDB ObjectId as hex string",
+            "example": "681234567890abcdef123456"
+          },
+          "username": {
+            "type": "string",
+            "example": "alice"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "alice@example.com"
+          }
+        },
+        "required": ["id", "username", "email"]
+      },
+      "UserCreatedMessage": {
+        "type": "object",
+        "properties": {
+          "msg": {
+            "type": "string",
+            "example": "user created"
+          }
+        },
+        "required": ["msg"]
+      },
+      "WelcomeMessage": {
+        "type": "object",
+        "properties": {
+          "msg": {
+            "type": "string",
+            "example": "Welcome back!"
+          }
+        },
+        "required": ["msg"]
+      },
+      "ErrorMessage": {
+        "type": "object",
+        "properties": {
+          "msg": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string",
+            "description": "Included in non-production environments"
+          }
+        },
+        "required": ["msg"]
+      },
+      "ValidationFailedBody": {
+        "type": "object",
+        "properties": {
+          "msg": {
+            "type": "string",
+            "example": "Validation failed"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": ["msg"]
+      },
+      "MongooseValidationFailedBody": {
+        "type": "object",
+        "properties": {
+          "msg": {
+            "type": "string",
+            "example": "Validation failed"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": { "type": "string" },
+                "msg": { "type": "string" }
+              }
+            }
+          }
+        },
+        "required": ["msg", "errors"]
+      }
+    },
+    "responses": {
+      "BadRequestValidation": {
+        "description": "Validation failed (express-validator body rules or Mongoose schema validation)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ValidationFailedBody"
+                },
+                {
+                  "$ref": "#/components/schemas/MongooseValidationFailedBody"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "ConflictDuplicate": {
+        "description": "Unique constraint violation (username or email)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorMessage"
+            },
+            "examples": {
+              "username": {
+                "value": { "msg": "Username already exists" }
+              },
+              "email": {
+                "value": { "msg": "Email already registered" }
+              }
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Unexpected server error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorMessage"
+            }
+          }
+        }
+      }
+    }
+  }
+}
