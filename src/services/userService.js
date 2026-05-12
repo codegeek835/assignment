@@ -2,10 +2,14 @@ import bcrypt from "bcrypt";
 import config from "../config/env.js";
 import User from "../models/User.js";
 
-export async function createUser(username, email, password) {
+export async function signup(username, email, password) {
   const hash = await bcrypt.hash(password, config.bcryptRounds);
-  await User.create({ username, email, password: hash });
-  return { created: true };
+  const doc = await User.create({ username, email, password: hash });
+  return {
+    id: String(doc._id),
+    username: doc.username,
+    email: doc.email,
+  };
 }
 
 /**
@@ -48,4 +52,4 @@ export async function listUsers() {
   }));
 }
 
-export default { createUser, verifyLogin, listUsers };
+export default { signup, verifyLogin, listUsers };

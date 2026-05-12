@@ -8,5 +8,6 @@ process.env.LOGIN_AUDIT_LOG_PATH = path.join(
   os.tmpdir(),
   "basic-api-jest-audit.log"
 );
+process.env.JWT_SECRET = "test-jwt-secret";
 
 jest.setTimeout(120000);

@@ -2,18 +2,32 @@
 
 Secure, modular restructuring of [Cisotronix/basic-api](https://github.com/Cisotronix/basic-api). Same routes:
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/createUser` | Register user (`username`, `email`, `password` JSON body; email validated & normalized) |
-| POST | `/login` | Authenticate with `password` and **either** `username` **or** `email` (not both) |
-| GET | `/users` | List users (`id`, `username`, `email`; no passwords) |
-| GET | `/alerts` | Suspicious IPs from the in-app failed-login log (Assignment 1 sliding-window logic) |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/signup` | — | Register user (`username`, `email`, `password` JSON body; email validated & normalized). Returns `{ msg, id, username, email, token }`. |
+| POST | `/login` | — | Authenticate with `password` and **either** `username` **or** `email` (not both). Returns `{ msg, id, username, email, token }`. |
+| GET | `/users` | **Bearer JWT** | List users (`id`, `username`, `email`; no passwords). Requires `Authorization: Bearer <token>`. |
+| GET | `/alerts` | — | Suspicious IPs from the access log (Assignment 1 sliding-window logic) |
 
-## Login audit (combined with Assignment 1)
+## Authentication
 
-Every **`401`** response from **`POST /login`** appends one line to **`LOGIN_AUDIT_LOG_PATH`** (default `./data/failed-logins.log`). Lines match the Assignment 1 parser shape (`FAILED LOGIN`, client IP, user identifier, reason).
+`POST /signup` and `POST /login` issue a JWT signed with **`JWT_SECRET`** (lifetime **`JWT_EXPIRES_IN`**, default `1h`). Send it on protected routes:
 
-**`GET /alerts`** reads that file and returns JSON in the same style as the Python analyzer: IPs with **more than `AUDIT_FAILURE_THRESHOLD`** failures inside any **`AUDIT_WINDOW_MINUTES`** sliding window (defaults **5** / **10**). Tune via `.env` (see [`.env.example`](.env.example)).
+```
+Authorization: Bearer <token>
+```
+
+`JWT_SECRET` is required in production. In dev/test a fallback is used so the server can boot without configuration.
+
+## Access log (combined with Assignment 1)
+
+Every response is appended to **`LOGIN_AUDIT_LOG_PATH`** (default `./data/failed-logins.log`) in the shape:
+
+```
+[2025-10-25T12:00:01Z] IP=203.0.113.42 METHOD=GET PATH=/admin STATUS=403
+```
+
+`GET /alerts` is excluded from the log (it reads the same file). The detector treats any line with `STATUS=401` or `STATUS=403` as a failed attempt and returns IPs with **more than `AUDIT_FAILURE_THRESHOLD`** such failures inside any **`AUDIT_WINDOW_MINUTES`** sliding window (defaults **5** / **10**). Tune via `.env` (see [`.env.example`](.env.example)).
 
 ## Prerequisites
 
@@ -23,11 +37,11 @@ Every **`401`** response from **`POST /login`** appends one line to **`LOGIN_AUD
 
 ```bash
 npm install
-cp .env.example .env   # set MONGODB_URI
+cp .env   # set MONGODB_URI
 npm start
 ```
 
-Server listens on `PORT` (default **3000**). **`MONGODB_URI`** is required (see `.env.example`).
+Server listens on `PORT` (default **3000**). **`MONGODB_URI`** is required (see `.env`).
 
 ### Swagger (OpenAPI)
 
@@ -48,7 +62,7 @@ npm start
 
 ## Postman
 
-Import [postman/Basic-API.postman_collection.json](postman/Basic-API.postman_collection.json) and [postman/Basic-API.local.postman_environment.json](postman/Basic-API.local.postman_environment.json). Select the **Basic API — Local** environment, start the server (`npm start`), then run **Create User** → **Login** → **List Users** → **Get alerts** (after some failed logins if you want non-empty results).
+Import [postman/Basic-API.postman_collection.json](postman/Basic-API.postman_collection.json) and [postman/Basic-API.local.postman_environment.json](postman/Basic-API.local.postman_environment.json). Select the **Basic API — Local** environment, start the server (`npm start`), then run **Signup** → **Login** → **List Users** → **Get alerts** (after some failed logins if you want non-empty results). The **Signup** and **Login** requests stash the returned `token` into a collection variable that **List Users** sends as a `Bearer` header.
 
 ## Tests
 
@@ -69,13 +83,14 @@ src/
   models/User.js      User schema (unique username / email)
   routes/users.js     User routes
   routes/alerts.js    GET /alerts (suspicious IPs)
-  validations/userValidators.js  express-validator chains for /createUser & /login
+  validations/userValidators.js  express-validator chains for /signup & /login
   controllers/        HTTP handlers (thin)
   services/userService.js   Users + bcrypt
   utils/getClientIp.js
   utils/safeFragment.js          Single-line log sanitizer
-  utils/loginAuditLog.js         Failed-login file append (401)
   utils/suspiciousLoginDetector.js  Sliding-window detection
+  middleware/accessLog.js        Per-request access-log append
+  middleware/authenticate.js     Bearer-JWT guard for protected routes
   middleware/         Validation + error handler
 ```
 

@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a1b2c3d4-basic-api-users",
     "name": "Basic API — Users",
-    "description": "Requests for the assignment `basic-api` Express server (`/createUser`, `/login`, `/users`).\n\nImport **Basic-API.local.postman_environment.json** or set collection variables `baseUrl`, `username`, `email`, `password`. Password must be 8–256 characters; **createUser** requires a valid email. **Login** accepts **either** `username` **or** `email` with `password` (not both)—use **Login (username)** or **Login (email)**.",
+    "description": "Requests for the assignment `basic-api` Express server (`/signup`, `/login`, `/users`, `/alerts`).\n\nImport **Basic-API.local.postman_environment.json** or set collection variables `baseUrl`, `username`, `email`, `password`. Password must be 8–256 characters; **signup** requires a valid email. **Login** accepts **either** `username` **or** `email` with `password` (not both)—use **Login (username)** or **Login (email)**.\n\n**Signup** and **Login** save the returned JWT into the `token` collection variable; **List Users** sends it as `Authorization: Bearer {{token}}`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -21,6 +21,10 @@
     {
       "key": "password",
       "value": "secretpass1"
+    },
+    {
+      "key": "token",
+      "value": ""
     }
   ],
   "item": [
@@ -28,7 +32,19 @@
       "name": "Users",
       "item": [
         {
-          "name": "Create User",
+          "name": "Signup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.token) { pm.collectionVariables.set('token', body.token); }"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -41,13 +57,25 @@
               "mode": "raw",
               "raw": "{\n  \"username\": \"{{username}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
             },
-            "url": "{{baseUrl}}/createUser",
-            "description": "Registers a user. Expect **201** with `{ \"msg\": \"user created\" }`. Duplicate username or email → **409** (`Username already exists` / `Email already registered`). Invalid email → **400**."
+            "url": "{{baseUrl}}/signup",
+            "description": "Registers a user. Expect **201** with `{ msg, id, username, email, token }`. The test script stores `token` in the collection variable for **List Users**. Duplicate username or email → **409**. Invalid email → **400**."
           },
           "response": []
         },
         {
           "name": "Login (username)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.token) { pm.collectionVariables.set('token', body.token); }"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -61,12 +89,24 @@
               "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
             },
             "url": "{{baseUrl}}/login",
-            "description": "Send **username** + **password** only. Expect **200** or **401**. Do not send `email` at the same time."
+            "description": "Send **username** + **password** only. Expect **200** with `{ msg, id, username, email, token }` or **401**. Do not send `email` at the same time. Token is stored in the `token` collection variable."
           },
           "response": []
         },
         {
           "name": "Login (email)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.token) { pm.collectionVariables.set('token', body.token); }"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -80,7 +120,7 @@
               "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
             },
             "url": "{{baseUrl}}/login",
-            "description": "Send **email** + **password** only. Same responses as username login."
+            "description": "Send **email** + **password** only. Same responses as username login. Token is stored in the `token` collection variable."
           },
           "response": []
         },
@@ -88,9 +128,14 @@
           "name": "List Users",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": "{{baseUrl}}/users",
-            "description": "Returns JSON array of `{ \"id\", \"username\", \"email\" }` (no passwords)."
+            "description": "Returns JSON array of `{ \"id\", \"username\", \"email\" }` (no passwords). Requires the JWT obtained from **Signup** or **Login**; **401** if missing or invalid."
           },
           "response": []
         },
@@ -100,7 +145,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/alerts",
-            "description": "Suspicious IPs from failed-login lines written by this API (`401` on `/login`). Empty array until enough failures in the sliding window."
+            "description": "Suspicious IPs from the access log written by this API. Any response with `STATUS=401` or `STATUS=403` counts as a failed attempt; empty array until enough failures land in the sliding window."
           },
           "response": []
         }

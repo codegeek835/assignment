@@ -49,7 +49,7 @@ const loginIdentityXor = check().custom((_value, ctx) => {
   return true;
 });
 
-export const createUserValidators = [usernameRule, emailRule, passwordRule];
+export const signupValidators = [usernameRule, emailRule, passwordRule];
 
 export const loginValidators = [
   loginUsernameOptional,

@@ -21,21 +21,26 @@ describe("User API", () => {
     await mongod.stop();
   });
 
-  it("creates a user", async () => {
+  it("signs up a user and returns a token", async () => {
     const res = await request(app)
-      .post("/createUser")
+      .post("/signup")
       .send({
         username: "alice",
         email: "alice@example.com",
         password: "secretpass1",
       });
     expect(res.status).toBe(201);
-    expect(res.body).toEqual({ msg: "user created" });
+    expect(res.body.msg).toBe("user created");
+    expect(res.body.username).toBe("alice");
+    expect(res.body.email).toBe("alice@example.com");
+    expect(res.body.id).toEqual(expect.any(String));
+    expect(typeof res.body.token).toBe("string");
+    expect(res.body.token.length).toBeGreaterThan(0);
   });
 
   it("rejects duplicate username", async () => {
     const res = await request(app)
-      .post("/createUser")
+      .post("/signup")
       .send({
         username: "alice",
         email: "other@example.com",
@@ -47,7 +52,7 @@ describe("User API", () => {
 
   it("rejects duplicate email", async () => {
     const res = await request(app)
-      .post("/createUser")
+      .post("/signup")
       .send({
         username: "bob",
         email: "alice@example.com",
@@ -59,7 +64,7 @@ describe("User API", () => {
 
   it("rejects invalid email format", async () => {
     const res = await request(app)
-      .post("/createUser")
+      .post("/signup")
       .send({
         username: "carol",
         email: "not-an-email",
@@ -76,7 +81,9 @@ describe("User API", () => {
       .post("/login")
       .send({ username: "alice", password: "secretpass1" });
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ msg: "Welcome back!" });
+    expect(res.body.msg).toBe("Welcome back!");
+    expect(typeof res.body.token).toBe("string");
+    expect(res.body.token.length).toBeGreaterThan(0);
   });
 
   it("logs in with email and correct password", async () => {
@@ -84,7 +91,8 @@ describe("User API", () => {
       .post("/login")
       .send({ email: "alice@example.com", password: "secretpass1" });
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ msg: "Welcome back!" });
+    expect(res.body.msg).toBe("Welcome back!");
+    expect(typeof res.body.token).toBe("string");
   });
 
   it("rejects wrong password", async () => {
@@ -95,8 +103,26 @@ describe("User API", () => {
     expect(res.body.msg).toBe("Invalid credentials");
   });
 
-  it("lists users without password field", async () => {
+  it("rejects GET /users without a token", async () => {
     const res = await request(app).get("/users");
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects GET /users with an invalid token", async () => {
+    const res = await request(app)
+      .get("/users")
+      .set("Authorization", "Bearer not-a-real-token");
+    expect(res.status).toBe(401);
+  });
+
+  it("lists users without password field when authenticated", async () => {
+    const login = await request(app)
+      .post("/login")
+      .send({ username: "alice", password: "secretpass1" });
+    expect(login.status).toBe(200);
+    const res = await request(app)
+      .get("/users")
+      .set("Authorization", `Bearer ${login.body.token}`);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThanOrEqual(1);
@@ -125,9 +151,9 @@ describe("User API", () => {
     expect(res.body.msg).toBe("Validation failed");
   });
 
-  it("requires email on createUser", async () => {
+  it("requires email on signup", async () => {
     const res = await request(app)
-      .post("/createUser")
+      .post("/signup")
       .send({ username: "dave", password: "secretpass1" });
     expect(res.status).toBe(400);
     expect(res.body.msg).toBe("Validation failed");

@@ -3,9 +3,9 @@ import fs from "node:fs/promises";
 const IP_PATTERN =
   /\b((?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3})\b/;
 const FAILED_HINT =
-  /failed\s+(?:password|login)|authentication\s+failure|invalid\s+user|login\s+incorrect|bad\s+password/i;
+  /failed\s+(?:password|login)|authentication\s+failure|invalid\s+user|login\s+incorrect|bad\s+password|STATUS=(?:400|401|403|409)/i;
 const TS_PREFIX =
-  /^(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})?)/;
+  /^\[?(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})?)\]?/;
 
 /**
  * @typedef {{ ts: Date; ip: string; rawLine: string }} FailedAttempt

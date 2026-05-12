@@ -16,10 +16,12 @@ IP_PATTERN = re.compile(
     r"\b(?P<ip>(?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3})\b"
 )
 
-# Lines considered failed login attempts (case-insensitive substring match after IP extraction)
+# Lines considered failed login attempts. Supports prose-style messages
+# ("failed password", "authentication failure", ...) AND structured access-log
+# entries with STATUS=401 / STATUS=403.
 FAILED_HINT = re.compile(
     r"(failed\s+(?:password|login)|authentication\s+failure|invalid\s+user|"
-    r"login\s+incorrect|bad\s+password)",
+    r"login\s+incorrect|bad\s+password|STATUS=(?:400|401|403|409))",
     re.IGNORECASE,
 )
 
@@ -27,7 +29,7 @@ FAILED_HINT = re.compile(
 TS_PATTERNS = [
     (
         re.compile(
-            r"^(?P<ts>\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?)"
+            r"^\[?(?P<ts>\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?)Z?\]?"
         ),
         "%Y-%m-%d %H:%M:%S",
     ),

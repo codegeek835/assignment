@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Basic API",
-    "description": "Assignment refactored Express API: user registration (`/createUser`), login (`/login`), listing users (`/users`), and login-audit analytics (`/alerts`). Each **401** login appends a line to the audit log; `/alerts` applies the Assignment 1 sliding-window rule (>5 failures in 10 minutes by default).",
+    "description": "Assignment refactored Express API: signup (`/signup`), login (`/login`), listing users (`/users`), and access-log analytics (`/alerts`). `/signup` and `/login` issue a JWT; `/users` requires `Authorization: Bearer <token>`. Every response is appended to an access log; `/alerts` applies the Assignment 1 sliding-window rule (>5 failures in 10 minutes by default) treating `STATUS=401|403` as failed attempts.",
     "version": "2.0.0"
   },
   "tags": [
@@ -16,18 +16,18 @@
     }
   ],
   "paths": {
-    "/createUser": {
+    "/signup": {
       "post": {
         "tags": ["Users"],
-        "summary": "Create user",
-        "description": "Registers a new user. Username and email must be unique. Password length 8–256 characters. Email is validated and normalized (RFC-style via express-validator).",
-        "operationId": "createUser",
+        "summary": "Sign up",
+        "description": "Registers a new user and returns a JWT. Username and email must be unique. Password length 8–256 characters. Email is validated and normalized (RFC-style via express-validator).",
+        "operationId": "signup",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateUserRequest"
+                "$ref": "#/components/schemas/SignupRequest"
               },
               "examples": {
                 "sample": {
@@ -47,7 +47,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserCreatedMessage"
+                  "$ref": "#/components/schemas/AuthResponse"
                 }
               }
             }
@@ -100,7 +100,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/WelcomeMessage"
+                  "$ref": "#/components/schemas/AuthResponse"
                 }
               }
             }
@@ -109,7 +109,7 @@
             "$ref": "#/components/responses/BadRequestValidation"
           },
           "401": {
-            "description": "Invalid credentials. Also appends one failed-login line to the audit log (see `LOGIN_AUDIT_LOG_PATH`).",
+            "description": "Invalid credentials. The access-log middleware records this response as `STATUS=401` (see `LOGIN_AUDIT_LOG_PATH`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -131,8 +131,9 @@
       "get": {
         "tags": ["Users"],
         "summary": "List users",
-        "description": "Returns `id`, `username`, and `email` (password hashes never returned).",
+        "description": "Returns `id`, `username`, and `email` (password hashes never returned). Requires a valid JWT.",
         "operationId": "listUsers",
+        "security": [{ "bearerAuth": [] }],
         "responses": {
           "200": {
             "description": "List of users",
@@ -143,6 +144,16 @@
                   "items": {
                     "$ref": "#/components/schemas/UserPublic"
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
                 }
               }
             }
@@ -181,8 +192,15 @@
     }
   },
   "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
     "schemas": {
-      "CreateUserRequest": {
+      "SignupRequest": {
         "type": "object",
         "required": ["username", "email", "password"],
         "properties": {
@@ -303,25 +321,34 @@
         },
         "required": ["id", "username", "email"]
       },
-      "UserCreatedMessage": {
-        "type": "object",
-        "properties": {
-          "msg": {
-            "type": "string",
-            "example": "user created"
-          }
-        },
-        "required": ["msg"]
-      },
-      "WelcomeMessage": {
+      "AuthResponse": {
         "type": "object",
         "properties": {
           "msg": {
             "type": "string",
             "example": "Welcome back!"
+          },
+          "id": {
+            "type": "string",
+            "description": "MongoDB ObjectId as hex string",
+            "example": "681234567890abcdef123456"
+          },
+          "username": {
+            "type": "string",
+            "example": "alice"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "alice@example.com"
+          },
+          "token": {
+            "type": "string",
+            "description": "Signed JWT. Send as `Authorization: Bearer <token>` on protected routes.",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
           }
         },
-        "required": ["msg"]
+        "required": ["msg", "id", "username", "email", "token"]
       },
       "ErrorMessage": {
         "type": "object",

@@ -1,11 +1,21 @@
+import jwt from "jsonwebtoken";
 import * as userService from "../services/userService.js";
-import { appendFailedLogin } from "../utils/loginAuditLog.js";
+import config from "../config/env.js";
 
-export async function createUser(req, res, next) {
+export async function signup(req, res, next) {
   try {
     const { username, email, password } = req.body;
-    await userService.createUser(username, email, password);
-    return res.status(201).json({ msg: "user created" });
+    const user = await userService.signup(username, email, password);
+    const token = jwt.sign(
+      { sub: user.id, username: user.username },
+      config.jwtSecret,
+      { expiresIn: config.jwtExpiresIn }
+    );
+    return res.status(201).json({
+      msg: "user created",
+      ...user,
+      token,
+    });
   } catch (err) {
     return next(err);
   }
@@ -20,17 +30,18 @@ export async function login(req, res, next) {
         : { username: String(username).trim() };
     const result = await userService.verifyLogin(identity, password);
     if (!result.ok) {
-      const identifier =
-        email != null && String(email).trim() !== ""
-          ? String(email).trim()
-          : String(username ?? "").trim();
-      await appendFailedLogin(req, {
-        identifier,
-        reason: result.reason,
-      });
       return res.status(401).json({ msg: "Invalid credentials" });
     }
-    return res.status(200).json({ msg: "Welcome back!" });
+    const token = jwt.sign(
+      { sub: result.user.id, username: result.user.username },
+      config.jwtSecret,
+      { expiresIn: config.jwtExpiresIn }
+    );
+    return res.status(200).json({ 
+      msg: "Welcome back!",
+      ...result.user,
+      token
+     });
   } catch (err) {
     return next(err);
   }
@@ -45,4 +56,4 @@ export async function listUsers(req, res, next) {
   }
 }
 
-export default { createUser, login, listUsers };
+export default { signup, login, listUsers };
