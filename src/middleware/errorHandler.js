@@ -1,5 +1,5 @@
-const mongoose = require("mongoose");
-const config = require("../config/env");
+import mongoose from "mongoose";
+import config from "../config/env.js";
 
 function duplicateKeyMessage(err) {
   const field = err.keyPattern ? Object.keys(err.keyPattern)[0] : null;
@@ -11,7 +11,7 @@ function duplicateKeyMessage(err) {
 }
 
 // eslint-disable-next-line no-unused-vars
-function errorHandler(err, req, res, next) {
+export function errorHandler(err, req, res, next) {
   if (err instanceof mongoose.Error.ValidationError) {
     const errors = Object.entries(err.errors).map(([path, e]) => ({
       path,
@@ -38,5 +38,3 @@ function errorHandler(err, req, res, next) {
   }
   res.status(status).json(payload);
 }
-
-module.exports = { errorHandler };

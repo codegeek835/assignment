@@ -1,10 +1,9 @@
-const fs = require("fs/promises");
-const request = require("supertest");
-const { MongoMemoryServer } = require("mongodb-memory-server");
+import fs from "node:fs/promises";
+import request from "supertest";
+import { MongoMemoryServer } from "mongodb-memory-server";
 
 describe("User API", () => {
   let mongod;
-  /** @type {typeof import("../src/db/database")} */
   let db;
   /** @type {import("express").Express} */
   let app;
@@ -12,9 +11,8 @@ describe("User API", () => {
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
     process.env.MONGODB_URI = mongod.getUri();
-    jest.resetModules();
-    db = require("../src/db/database");
-    ({ app } = require("../src/app"));
+    db = await import("../src/db/database.js");
+    ({ app } = await import("../src/app.js"));
     await db.initDatabase();
   });
 

@@ -1,7 +1,7 @@
-const userService = require("../services/userService");
-const { appendFailedLogin } = require("../utils/loginAuditLog");
+import * as userService from "../services/userService.js";
+import { appendFailedLogin } from "../utils/loginAuditLog.js";
 
-async function createUser(req, res, next) {
+export async function createUser(req, res, next) {
   try {
     const { username, email, password } = req.body;
     await userService.createUser(username, email, password);
@@ -11,7 +11,7 @@ async function createUser(req, res, next) {
   }
 }
 
-async function login(req, res, next) {
+export async function login(req, res, next) {
   try {
     const { username, email, password } = req.body;
     const identity =
@@ -36,7 +36,7 @@ async function login(req, res, next) {
   }
 }
 
-async function listUsers(req, res, next) {
+export async function listUsers(req, res, next) {
   try {
     const rows = await userService.listUsers();
     return res.status(200).json(rows);
@@ -45,8 +45,4 @@ async function listUsers(req, res, next) {
   }
 }
 
-module.exports = {
-  createUser,
-  login,
-  listUsers,
-};
+export default { createUser, login, listUsers };

@@ -1,8 +1,8 @@
-const bcrypt = require("bcrypt");
-const config = require("../config/env");
-const User = require("../models/User");
+import bcrypt from "bcrypt";
+import config from "../config/env.js";
+import User from "../models/User.js";
 
-async function createUser(username, email, password) {
+export async function createUser(username, email, password) {
   const hash = await bcrypt.hash(password, config.bcryptRounds);
   await User.create({ username, email, password: hash });
   return { created: true };
@@ -12,7 +12,7 @@ async function createUser(username, email, password) {
  * @param {{ username?: string; email?: string }} identity
  * Exactly one of username or email must be set (enforced by route validators).
  */
-async function verifyLogin(identity, password) {
+export async function verifyLogin(identity, password) {
   let doc;
   if (identity.email) {
     doc = await User.findOne({ email: identity.email }).lean();
@@ -36,7 +36,7 @@ async function verifyLogin(identity, password) {
   };
 }
 
-async function listUsers() {
+export async function listUsers() {
   const rows = await User.find()
     .sort({ _id: 1 })
     .select({ username: 1, email: 1 })
@@ -48,8 +48,4 @@ async function listUsers() {
   }));
 }
 
-module.exports = {
-  createUser,
-  verifyLogin,
-  listUsers,
-};
+export default { createUser, verifyLogin, listUsers };

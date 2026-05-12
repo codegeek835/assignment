@@ -1,7 +1,7 @@
-const config = require("../config/env");
-const { analyzeAuditLogFile } = require("../utils/suspiciousLoginDetector");
+import config from "../config/env.js";
+import { analyzeAuditLogFile } from "../utils/suspiciousLoginDetector.js";
 
-async function getAlerts(_req, res, next) {
+export async function getAlerts(_req, res, next) {
   try {
     const data = await analyzeAuditLogFile(config.loginAuditLogPath, {
       windowMinutes: config.auditWindowMinutes,
@@ -13,4 +13,4 @@ async function getAlerts(_req, res, next) {
   }
 }
 
-module.exports = { getAlerts };
+export default { getAlerts };

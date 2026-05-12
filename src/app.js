@@ -1,8 +1,8 @@
-const express = require("express");
-const userRoutes = require("./routes/users");
-const alertsRoutes = require("./routes/alerts");
-const { errorHandler } = require("./middleware/errorHandler");
-const { attachSwagger } = require("./docs/swagger");
+import express from "express";
+import userRoutes from "./routes/users.js";
+import alertsRoutes from "./routes/alerts.js";
+import { errorHandler } from "./middleware/errorHandler.js";
+import { attachSwagger } from "./docs/swagger.js";
 
 const app = express();
 
@@ -15,4 +15,4 @@ app.use(userRoutes);
 
 app.use(errorHandler);
 
-module.exports = { app };
+export { app };

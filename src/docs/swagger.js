@@ -1,11 +1,14 @@
-const swaggerUi = require("swagger-ui-express");
-const config = require("../config/env");
+import { createRequire } from "node:module";
+import swaggerUi from "swagger-ui-express";
+import config from "../config/env.js";
+
+const require = createRequire(import.meta.url);
 const openapiBase = require("./openapi.json");
 
 /**
  * Serves Swagger UI at `/api-docs` and the raw OpenAPI document at `/openapi.json`.
  */
-function attachSwagger(app) {
+export function attachSwagger(app) {
   const spec = JSON.parse(JSON.stringify(openapiBase));
   spec.servers = [
     {
@@ -26,5 +29,3 @@ function attachSwagger(app) {
     res.json(spec);
   });
 }
-
-module.exports = { attachSwagger };

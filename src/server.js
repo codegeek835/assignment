@@ -1,9 +1,9 @@
-const { app } = require("./app");
-const config = require("./config/env");
-const db = require("./db/database");
+import { app } from "./app.js";
+import config from "./config/env.js";
+import { initDatabase } from "./db/database.js";
 
 async function main() {
-  await db.initDatabase();
+  await initDatabase();
   app.listen(config.port, () => {
     // eslint-disable-next-line no-console
     console.log(`Server running on port ${config.port}`);

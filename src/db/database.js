@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
-const config = require("../config/env");
+import mongoose from "mongoose";
+import config from "../config/env.js";
 
-async function initDatabase() {
+export async function initDatabase() {
   if (!config.mongoUri) {
     throw new Error(
       "MONGODB_URI is required (set connection string to your MongoDB deployment)."
@@ -14,12 +14,9 @@ async function initDatabase() {
   return mongoose.connection;
 }
 
-async function closeDatabase() {
+export async function closeDatabase() {
   if (mongoose.connection.readyState === 0) return;
   await mongoose.disconnect();
 }
 
-module.exports = {
-  initDatabase,
-  closeDatabase,
-};
+export default { initDatabase, closeDatabase };

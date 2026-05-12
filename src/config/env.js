@@ -1,6 +1,5 @@
-require("dotenv").config();
-
-const path = require("path");
+import "dotenv/config";
+import path from "node:path";
 
 const port = parseInt(process.env.PORT || "3000", 10);
 if (Number.isNaN(port) || port < 1) {
@@ -12,16 +11,13 @@ if (Number.isNaN(bcryptRounds) || bcryptRounds < 4) {
   throw new Error("Invalid BCRYPT_ROUNDS");
 }
 
-/** MongoDB connection URI (e.g. mongodb://localhost:27017/basic_api) */
 const mongoUri = process.env.MONGODB_URI || "";
 
 const loginAuditLogPath =
   process.env.LOGIN_AUDIT_LOG_PATH ||
   path.join(process.cwd(), "../logs", "failed-logins.log");
 
-const auditWindowMinutes = parseFloat(
-  process.env.AUDIT_WINDOW_MINUTES || "10"
-);
+const auditWindowMinutes = parseFloat(process.env.AUDIT_WINDOW_MINUTES || "10");
 if (Number.isNaN(auditWindowMinutes) || auditWindowMinutes <= 0) {
   throw new Error("Invalid AUDIT_WINDOW_MINUTES");
 }
@@ -34,7 +30,7 @@ if (Number.isNaN(auditFailureThreshold) || auditFailureThreshold < 1) {
   throw new Error("Invalid AUDIT_FAILURE_THRESHOLD");
 }
 
-module.exports = {
+export default {
   nodeEnv: process.env.NODE_ENV || "development",
   port,
   mongoUri,

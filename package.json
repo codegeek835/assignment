@@ -2,11 +2,12 @@
   "name": "basic-api",
   "version": "2.0.0",
   "description": "Refactored Express + MongoDB user API with security hardening",
+  "type": "module",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "jest --runInBand"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand"
   },
   "keywords": [],
   "author": "",

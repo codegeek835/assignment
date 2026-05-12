@@ -1,4 +1,4 @@
-const { body, check } = require("express-validator");
+import { body, check } from "express-validator";
 
 const usernameRule = body("username")
   .trim()
@@ -49,16 +49,11 @@ const loginIdentityXor = check().custom((_value, ctx) => {
   return true;
 });
 
-const createUserValidators = [usernameRule, emailRule, passwordRule];
+export const createUserValidators = [usernameRule, emailRule, passwordRule];
 
-const loginValidators = [
+export const loginValidators = [
   loginUsernameOptional,
   loginEmailOptional,
   passwordRule,
   loginIdentityXor,
 ];
-
-module.exports = {
-  createUserValidators,
-  loginValidators,
-};

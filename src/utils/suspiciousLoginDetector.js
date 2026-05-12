@@ -1,4 +1,4 @@
-const fs = require("fs/promises");
+import fs from "node:fs/promises";
 
 const IP_PATTERN =
   /\b((?:25[0-5]|2[0-4]\d|[01]?\d\d?)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)){3})\b/;
@@ -23,7 +23,7 @@ function parseTimestamp(line) {
 }
 
 /** @param {string[]} lines */
-function iterFailedAttempts(lines) {
+export function iterFailedAttempts(lines) {
   /** @type {FailedAttempt[]} */
   const out = [];
   for (const raw of lines) {
@@ -71,7 +71,7 @@ function mergeOverlappingWindows(windows) {
  * @param {{ windowMs: number; threshold: number }} opts
  * @returns {SuspiciousSummary[]}
  */
-function detectSuspiciousIps(attempts, opts) {
+export function detectSuspiciousIps(attempts, opts) {
   const { windowMs, threshold } = opts;
   /** @type {Map<string, Date[]>} */
   const byIp = new Map();
@@ -134,7 +134,7 @@ function toApiJson(summaries) {
  * @param {string} filePath
  * @param {{ windowMinutes?: number; threshold?: number }} [opts]
  */
-async function analyzeAuditLogFile(filePath, opts = {}) {
+export async function analyzeAuditLogFile(filePath, opts = {}) {
   const windowMinutes = opts.windowMinutes ?? 10;
   const threshold = opts.threshold ?? 5;
   let text = "";
@@ -150,9 +150,3 @@ async function analyzeAuditLogFile(filePath, opts = {}) {
   const summaries = detectSuspiciousIps(attempts, { windowMs, threshold });
   return toApiJson(summaries);
 }
-
-module.exports = {
-  analyzeAuditLogFile,
-  iterFailedAttempts,
-  detectSuspiciousIps,
-};

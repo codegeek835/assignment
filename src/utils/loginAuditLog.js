@@ -1,8 +1,8 @@
-const fs = require("fs/promises");
-const path = require("path");
-const config = require("../config/env");
-const { getClientIp } = require("./getClientIp");
-const { safeFragment } = require("./safeFragment");
+import fs from "node:fs/promises";
+import path from "node:path";
+import config from "../config/env.js";
+import { getClientIp } from "./getClientIp.js";
+import { safeFragment } from "./safeFragment.js";
 
 /**
  * Append one failed-login line (same shape as Assignment 1 log analyzer).
@@ -10,7 +10,7 @@ const { safeFragment } = require("./safeFragment");
  * @param {import('express').Request} req
  * @param {{ identifier?: string; reason: string }} meta
  */
-async function appendFailedLogin(req, meta) {
+export async function appendFailedLogin(req, meta) {
   try {
     const ip = getClientIp(req);
     const ts = new Date().toISOString();
@@ -25,5 +25,3 @@ async function appendFailedLogin(req, meta) {
     console.error("[loginAuditLog] append failed:", err.message || err);
   }
 }
-
-module.exports = { appendFailedLogin };

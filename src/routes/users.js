@@ -1,10 +1,10 @@
-const express = require("express");
-const userController = require("../controllers/userController");
-const { validateRequest } = require("../middleware/validate");
-const {
+import express from "express";
+import userController from "../controllers/userController.js";
+import { validateRequest } from "../middleware/validate.js";
+import {
   createUserValidators,
   loginValidators,
-} = require("../validations/userValidators");
+} from "../validations/userValidators.js";
 
 const router = express.Router();
 
@@ -15,13 +15,8 @@ router.post(
   userController.createUser
 );
 
-router.post(
-  "/login",
-  loginValidators,
-  validateRequest,
-  userController.login
-);
+router.post("/login", loginValidators, validateRequest, userController.login);
 
 router.get("/users", userController.listUsers);
 
-module.exports = router;
+export default router;

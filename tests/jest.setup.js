@@ -1,5 +1,6 @@
-const path = require("path");
-const os = require("os");
+import path from "node:path";
+import os from "node:os";
+import { jest } from "@jest/globals";
 
 process.env.NODE_ENV = "test";
 process.env.PORT = "3999";
