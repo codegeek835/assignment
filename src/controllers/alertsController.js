@@ -1,5 +1,5 @@
 const config = require("../config/env");
-const { analyzeAuditLogFile } = require("../services/suspiciousLoginDetector");
+const { analyzeAuditLogFile } = require("../utils/suspiciousLoginDetector");
 
 async function getAlerts(_req, res, next) {
   try {

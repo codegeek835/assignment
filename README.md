@@ -67,13 +67,15 @@ src/
   config/env.js       Environment variables
   db/database.js      Mongoose connection helpers
   models/User.js      User schema (unique username / email)
-  routes/users.js     User routes + validators
+  routes/users.js     User routes
   routes/alerts.js    GET /alerts (suspicious IPs)
+  validations/userValidators.js  express-validator chains for /createUser & /login
   controllers/        HTTP handlers (thin)
   services/userService.js   Users + bcrypt
-  services/loginAuditLog.js Failed-login file append (401)
-  services/suspiciousLoginDetector.js  Sliding-window detection
   utils/getClientIp.js
+  utils/safeFragment.js          Single-line log sanitizer
+  utils/loginAuditLog.js         Failed-login file append (401)
+  utils/suspiciousLoginDetector.js  Sliding-window detection
   middleware/         Validation + error handler
 ```
 

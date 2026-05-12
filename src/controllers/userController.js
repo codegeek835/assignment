@@ -1,5 +1,5 @@
 const userService = require("../services/userService");
-const { appendFailedLogin } = require("../services/loginAuditLog");
+const { appendFailedLogin } = require("../utils/loginAuditLog");
 
 async function createUser(req, res, next) {
   try {

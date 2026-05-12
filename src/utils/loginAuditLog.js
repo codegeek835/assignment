@@ -1,12 +1,8 @@
 const fs = require("fs/promises");
 const path = require("path");
 const config = require("../config/env");
-const { getClientIp } = require("../utils/getClientIp");
-
-function safeFragment(value, maxLen = 128) {
-  if (value == null) return "unknown";
-  return String(value).replace(/[\r\n\t]/g, " ").slice(0, maxLen);
-}
+const { getClientIp } = require("./getClientIp");
+const { safeFragment } = require("./safeFragment");
 
 /**
  * Append one failed-login line (same shape as Assignment 1 log analyzer).
